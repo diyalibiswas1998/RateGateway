@@ -1,0 +1,34 @@
+[project]
+name = "rategate"
+version = "0.1.0"
+description = "Distributed rate limiting service using FastAPI and Redis"
+readme = "README.md"
+authors = [
+    { name = "Diyali Biswas", email = "diyalibiswas1998@gmail.com" }
+]
+requires-python = ">=3.12"
+dependencies = [
+    "fastapi>=0.162.0",
+    "prometheus-client>=0.26.0",
+    "pydantic-settings>=2.16.2",
+    "redis>=8.1.0",
+    "uvicorn[standard]>=0.54.0",
+]
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
+testpaths = ["tests"]
+asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "function"
+
+[tool.ruff]
+extend-exclude = ["docs"]
+
+
+[dependency-groups]
+dev = [
+    "httpx>=0.28.1",
+    "pytest>=9.2.0",
+    "pytest-asyncio>=1.4.1.post1",
+    "ruff>=0.17.3",
+]

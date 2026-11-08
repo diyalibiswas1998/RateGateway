@@ -1,0 +1,11 @@
+# Only what the Dockerfile copies is needed; everything else would slow the
+# build and could leak local files into the image.
+.git
+.venv
+.env
+**/__pycache__
+.pytest_cache
+.ruff_cache
+docs
+tests
+scripts

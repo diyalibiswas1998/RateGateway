@@ -1,0 +1,16 @@
+# Python-generated files
+__pycache__/
+*.py[oc]
+build/
+dist/
+wheels/
+*.egg-info
+
+# Virtual environments
+.venv
+
+# Per-machine settings (may hold secrets; never committed)
+.env
+
+# Load-test output (CSV files written by Locust); the summary goes in the README
+loadtest/results/

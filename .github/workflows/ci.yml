@@ -1,0 +1,82 @@
+# Runs on every push and pull request. Both jobs must pass for a green check.
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  test:
+    name: Lint and test
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    # A real Redis for the tests, reachable at localhost:6379 like on your machine.
+    services:
+      redis:
+        image: redis:7
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 2s
+          --health-timeout 3s
+          --health-retries 15
+
+    steps:
+      - uses: actions/checkout@v7
+
+      # The same uv version as on the development machine.
+      - uses: astral-sh/setup-uv@v10.3.3
+        with:
+          version: "0.13.6"
+
+      # --locked: fail if uv.lock is out of date with pyproject.toml.
+      - name: Install dependencies
+        run: uv sync --locked
+
+      - name: Lint
+        run: uv run ruff check .
+
+      - name: Check formatting
+        run: uv run ruff format --check .
+
+      - name: Run tests
+        run: uv run pytest -v
+
+  stack:
+    name: Docker stack (3 copies behind nginx)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: astral-sh/setup-uv@v10.3.3
+        with:
+          version: "0.13.6"
+
+      # Only the script's dependency (httpx); the API itself runs in the containers.
+      - name: Install dependencies
+        run: uv sync --locked
+
+      # Limit 100 with nothing refilling, so the expected result is exact.
+      - name: Start the stack
+        env:
+          RATEGATE_CAPACITY: "100"
+          RATEGATE_REFILL_RATE: "0.001"
+        run: docker compose up --build -d --wait
+
+      - name: Burst through nginx stays exactly at the limit
+        run: >-
+          uv run python scripts/concurrent_burst.py
+          --url http://127.0.0.1:8080/api/resource --total 200
+          --expect-allowed 100 --expect-instances 3
+
+      - name: Show container logs
+        if: failure()
+        run: docker compose logs
+
+      - name: Stop the stack
+        if: always()
+        run: docker compose down
